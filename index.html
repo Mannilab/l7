@@ -16,20 +16,20 @@
   header .hint{margin-left:auto;font-size:10px;letter-spacing:.16em;color:#55577d;text-transform:uppercase}
   #stage{flex:1;position:relative;min-height:0}
   #c{position:absolute;inset:0;width:100%;height:100%;display:block}
-  #caption{position:absolute;left:0;right:0;bottom:14px;text-align:center;pointer-events:none}
-  #caption .op{font-family:"Iowan Old Style",Palatino,Georgia,serif;font-size:22px;letter-spacing:.12em;color:#fff}
-  #caption .op b{font-size:26px;margin-right:10px;opacity:.9}
-  #caption .dsc{font-size:12px;letter-spacing:.14em;color:#8f92bd;margin-top:5px;font-style:italic;font-family:"Iowan Old Style",Palatino,Georgia,serif}
-  .bar{display:flex;gap:9px;padding:12px 16px 18px;justify-content:center;flex-wrap:wrap;
+  #caption{position:absolute;left:0;right:0;bottom:14px;text-align:center;pointer-events:none;padding:0 12px}
+  #caption .op{font-family:"Iowan Old Style",Palatino,Georgia,serif;font-size:22px;letter-spacing:.1em;color:#fff}
+  #caption .op b{font-size:24px;margin-right:10px;opacity:.9}
+  #caption .dsc{font-size:12px;letter-spacing:.12em;color:#8f92bd;margin-top:5px;font-style:italic;font-family:"Iowan Old Style",Palatino,Georgia,serif}
+  .bar{display:flex;gap:8px;padding:12px 14px 16px;justify-content:center;flex-wrap:wrap;
        border-top:1px solid rgba(150,160,220,.12);background:linear-gradient(to top,rgba(12,12,26,.7),transparent)}
-  .btn{min-width:96px;border:1px solid rgba(150,160,220,.2);border-radius:12px;background:rgba(24,24,44,.5);
-       color:#dfe0f2;cursor:pointer;padding:10px 12px;transition:.16s;text-align:center}
+  .btn{min-width:84px;border:1px solid rgba(150,160,220,.2);border-radius:12px;background:rgba(24,24,44,.5);
+       color:#dfe0f2;cursor:pointer;padding:9px 11px;transition:.16s;text-align:center}
   .btn:hover{border-color:rgba(180,190,255,.5);background:rgba(40,40,80,.6);transform:translateY(-2px)}
   .btn.sel{border-color:#fff;background:rgba(60,60,110,.7);box-shadow:0 0 22px rgba(160,180,255,.35)}
-  .btn .s{display:block;font-size:22px;line-height:1;font-family:"Iowan Old Style",Palatino,Georgia,serif}
-  .btn .l{display:block;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:#9a9cc4;margin-top:5px}
+  .btn .s{display:block;font-size:20px;line-height:1;font-family:"Iowan Old Style",Palatino,Georgia,serif}
+  .btn .l{display:block;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#9a9cc4;margin-top:5px}
   .btn.sel .l{color:#fff}
-  @media(max-width:640px){h1{font-size:21px}.hint{display:none}.btn{min-width:74px;padding:9px 8px}.btn .s{font-size:19px}}
+  @media(max-width:640px){h1{font-size:21px}.hint{display:none}.btn{min-width:66px;padding:8px 7px}.btn .s{font-size:18px}.btn .l{font-size:8px}}
 </style>
 </head>
 <body>
@@ -53,91 +53,105 @@ function resize(){const r=canvas.getBoundingClientRect();DPR=Math.min(2,window.d
   canvas.width=r.width*DPR;canvas.height=r.height*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);W=r.width;H=r.height;}
 window.addEventListener('resize',resize);
 
-// utilità: raggio luminoso con bagliore (additivo)
 function beam(x1,y1,x2,y2,width,color,alpha){
   ctx.globalCompositeOperation='lighter';ctx.lineCap='round';ctx.strokeStyle=color;ctx.shadowColor=color;
   ctx.globalAlpha=alpha*0.22;ctx.lineWidth=width*4.5;ctx.shadowBlur=26;line(x1,y1,x2,y2);
   ctx.globalAlpha=alpha*0.55;ctx.lineWidth=width*1.9;ctx.shadowBlur=13;line(x1,y1,x2,y2);
-  ctx.globalAlpha=alpha;ctx.lineWidth=width;ctx.shadowBlur=4;line(x1,y1,x2,y2);
+  ctx.globalAlpha=Math.min(1,alpha);ctx.lineWidth=width;ctx.shadowBlur=4;line(x1,y1,x2,y2);
   ctx.globalAlpha=1;ctx.shadowBlur=0;ctx.globalCompositeOperation='source-over';
 }
 function line(x1,y1,x2,y2){ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}
 function glow(x,y,r,color,a){ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(x,y,0,x,y,r);
-  g.addColorStop(0,color);g.addColorStop(1,'rgba(0,0,0,0)');ctx.globalAlpha=a;ctx.fillStyle=g;
+  g.addColorStop(0,color);g.addColorStop(1,'rgba(0,0,0,0)');ctx.globalAlpha=Math.min(1,a);ctx.fillStyle=g;
   ctx.beginPath();ctx.arc(x,y,r,0,6.2832);ctx.fill();ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';}
 
-// generatori di fasci d'uscita
-function fan(n,spread,colFn,width,bright){const out=[];for(let i=0;i<n;i++){const t=n>1?i/(n-1)-0.5:0;
-  out.push({a:t*spread,w:width,b:bright,col:colFn(i,n)});}return out;}
+// generatore di ventagli: n fasci in un angolo di apertura "spread" (radianti)
+function fan(n,spread,colFn,width,bright){const out=[];for(let i=0;i<n;i++){const tt=n>1?i/(n-1)-0.5:0;
+  out.push({ang:tt*spread,w:width,b:bright,col:colFn(i,n)});}return out;}
+const RAIN=(i,n)=>`hsl(${280*(i/(n-1))},100%,60%)`;
+const FOUR=['#ff2d2d','#ff8c1a','#ffe11a','#33ff77','#3aa0ff','#b14bff'];
 
+// operazioni: ogni una definisce i fasci in uscita {ang(rad), w, b, col}
 const OPS={
   identita:{sym:'=',nome:'Identità',dsc:'La luce esce invariata',
-    beams:[{a:0,w:7,b:1,col:'#ffffff'}]},
+    beams:[{ang:0,w:7,b:1,col:'#ffffff'}]},
   somma:{sym:'+',nome:'Somma',dsc:'La luce esce raddoppiata',
-    beams:[{a:-0.10,w:7,b:1,col:'#ffffff'},{a:0.10,w:7,b:1,col:'#ffffff'}]},
+    beams:[{ang:-0.10,w:7,b:1,col:'#ffffff'},{ang:0.10,w:7,b:1,col:'#ffffff'}]},
   sottrazione:{sym:'−',nome:'Sottrazione',dsc:'La luce esce dimezzata',
-    beams:[{a:0,w:3.2,b:0.42,col:'#ffffff'}]},
+    beams:[{ang:0,w:3.2,b:0.42,col:'#ffffff'}]},
   moltiplicazione:{sym:'×',nome:'Moltiplicazione',dsc:'Un ingresso, molte uscite',
     beams:fan(9,0.62,()=>'#ffffff',4,0.85)},
   divisione:{sym:'÷',nome:'Divisione',dsc:'Il flusso si divide in rami',
     beams:fan(3,0.42,()=>'#ffffff',6,0.95)},
   prisma:{sym:'▲',nome:'Prisma',dsc:'La luce bianca si scompone nello spettro',
-    beams:fan(28,0.66,(i,n)=>`hsl(${280*(i/(n-1))},100%,60%)`,3.2,0.95)},
+    beams:fan(28,0.66,RAIN,3.2,0.95)},
+  // --- nuove ---
+  riflessione:{sym:'±',nome:'Riflessione',dsc:'La luce si riflette e inverte la direzione',
+    beams:[{ang:-2.25,w:7,b:1,col:'#ffffff'},{ang:0,w:3,b:0.18,col:'#ffffff'}]},
+  potenza:{sym:'xⁿ',nome:'Potenza',dsc:"L'intensità cresce in modo non lineare",glowExit:1.4,
+    beams:[{ang:0,w:17,b:1.5,col:'#ffffff'}]},
+  logaritmo:{sym:'log',nome:'Logaritmo',dsc:'Riduce enormi differenze di intensità',
+    beams:fan(13,0.16,()=>'#ffffff',2.4,0.5)},
+  esponenziale:{sym:'eˣ',nome:'Esponenziale',dsc:'Una piccola luce invade lo spazio',glowExit:2.2,
+    beams:fan(15,0.95,()=>'#ffffff',3,0.8)},
+  assoluto:{sym:'|x|',nome:'Valore assoluto',dsc:'Elimina la polarità: resta la magnitudine',
+    beams:[{ang:-0.07,w:5,b:0.9,col:'#fff'},{ang:-0.2,w:5,b:0.9,col:'#fff'},{ang:-0.36,w:5,b:0.9,col:'#fff'},{ang:-0.55,w:5,b:0.9,col:'#fff'}]},
+  fourier:{sym:'∿',nome:'Fourier',dsc:'Scompone la luce nelle sue frequenze',
+    beams:FOUR.map((c,i)=>({ang:-0.28+i*0.112,w:3.4,b:0.95,col:c}))},
+  caos:{sym:'≷',nome:'Caos',dsc:'Minime variazioni, esiti completamente diversi',dynamic:true,beams:[]},
 };
-const ORDER=['identita','somma','sottrazione','moltiplicazione','divisione','prisma'];
-let cur='prisma', reveal=0, flash=0, t=0;
+const ORDER=['identita','somma','sottrazione','moltiplicazione','divisione','prisma',
+             'riflessione','potenza','logaritmo','esponenziale','assoluto','fourier','caos'];
+let cur='prisma', reveal=0, flash=0, t=0, frame=0, caosBeams=[];
 
-// pulsanti
 const bar=document.getElementById('bar');
 ORDER.forEach(id=>{const o=OPS[id];const b=document.createElement('button');b.className='btn'+(id===cur?' sel':'');
   b.dataset.id=id;b.innerHTML=`<span class="s">${o.sym}</span><span class="l">${o.nome}</span>`;
   b.onclick=()=>setOp(id);bar.appendChild(b);});
-function setOp(id){cur=id;reveal=0;flash=1;
+function setOp(id){cur=id;reveal=0;flash=1;caosBeams=[];
   document.querySelectorAll('.btn').forEach(b=>b.classList.toggle('sel',b.dataset.id===id));
   const o=OPS[id];document.getElementById('cap-sym').textContent=o.sym;
   document.getElementById('cap-nome').textContent=o.nome;document.getElementById('cap-dsc').textContent=o.dsc;}
 
 function draw(){
-  t+=0.016; if(reveal<1)reveal=Math.min(1,reveal+0.05); if(flash>0)flash*=0.90;
+  t+=0.016; frame++; if(reveal<1)reveal=Math.min(1,reveal+0.05); if(flash>0)flash*=0.90;
   ctx.globalCompositeOperation='source-over';ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
-  // vignetta
   const vg=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.2,W/2,H/2,Math.max(W,H)*0.7);
   vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,0.6)');ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
 
   const cy=H*0.5, srcX=W*0.13, ph=Math.min(W,H)*0.13, prismCx=W*0.45;
-  const entryX=prismCx-ph*0.55, exitX=prismCx+ph*0.35, rightX=W*0.98;
+  const entryX=prismCx-ph*0.55, exitX=prismCx+ph*0.35, L=Math.hypot(W,H)*1.15;
 
-  // sorgente
   glow(srcX,cy,ph*1.1,'rgba(255,255,255,0.5)',0.9);
   glow(srcX,cy,ph*0.4,'#ffffff',1);
-  // fascio in ingresso (bianco) con fotone che scorre
   beam(srcX,cy,entryX,cy,7,'#ffffff',0.95);
   const pp=(t*0.4)%1, fx=srcX+(entryX-srcX)*pp;
   glow(fx,cy,10,'#ffffff',0.8);
 
-  // prisma di vetro (triangolo, apice in alto)
+  // prisma di vetro
   const ax=prismCx, ay=cy-ph*1.15, blx=prismCx-ph, bly=cy+ph*0.85, brx=prismCx+ph, bry=cy+ph*0.85;
   const gg=ctx.createLinearGradient(0,ay,0,bry);
   gg.addColorStop(0,'rgba(210,220,255,0.28)');gg.addColorStop(0.5,'rgba(150,160,210,0.14)');gg.addColorStop(1,'rgba(120,130,180,0.22)');
-  ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(blx,bly);ctx.lineTo(brx,bry);ctx.closePath();
-  ctx.fillStyle=gg;ctx.fill();
-  // bagliore dove la luce colpisce il prisma
+  ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(blx,bly);ctx.lineTo(brx,bry);ctx.closePath();ctx.fillStyle=gg;ctx.fill();
   glow(entryX,cy,ph*0.5,'rgba(255,255,255,0.5)',0.6+flash*0.4);
-  // bordi del prisma
   ctx.globalCompositeOperation='lighter';ctx.lineJoin='round';
   ctx.strokeStyle='rgba(255,255,255,0.85)';ctx.lineWidth=1.6;ctx.shadowBlur=8;ctx.shadowColor='rgba(200,220,255,0.8)';
   ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(blx,bly);ctx.lineTo(brx,bry);ctx.closePath();ctx.stroke();
   ctx.shadowBlur=0;ctx.globalCompositeOperation='source-over';
 
-  // fasci in uscita (secondo l'operazione), rivelati progressivamente
   const o=OPS[cur];
-  for(const bm of o.beams){
-    const shimmer=1+0.06*Math.sin(t*3+bm.a*20);
-    const ex=exitX+(rightX-exitX)*reveal;
-    const ey=cy+Math.tan(bm.a)*(ex-exitX);
+  // caos: fasci generati dinamicamente, rigenerati ogni tanto + jitter
+  let beams=o.beams;
+  if(o.dynamic){
+    if(caosBeams.length===0||frame%10===0){caosBeams=[];for(let i=0;i<16;i++)caosBeams.push({ang:(Math.random()-0.5)*1.5,w:2.4,b:0.3+Math.random()*0.7,col:'#ffffff'});}
+    beams=caosBeams.map(bm=>({ang:bm.ang+(Math.random()-0.5)*0.03,w:bm.w,b:bm.b,col:bm.col}));
+  }
+  for(const bm of beams){
+    const shimmer=1+0.06*Math.sin(t*3+bm.ang*20);
+    const ex=exitX+Math.cos(bm.ang)*L*reveal, ey=cy+Math.sin(bm.ang)*L*reveal;
     beam(exitX,cy,ex,ey,bm.w,bm.col,bm.b*reveal*shimmer);
   }
-  // lampo al cambio
+  if(o.glowExit)glow(exitX,cy,ph*o.glowExit*(0.6+0.4*reveal),'rgba(255,255,255,0.5)',0.5*reveal);
   if(flash>0.02)glow(exitX,cy,ph*(1+flash*2),'rgba(255,255,255,'+(flash*0.5)+')',flash);
 
   requestAnimationFrame(draw);
